@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: cse341-contacts
+    env: node
+    region: oregon  # or any region close to you
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false  # You'll enter this manually in Render dashboard
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000  # Render provides this port
+    autoDeploy: true

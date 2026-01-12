@@ -1,0 +1,23 @@
+@baseUrl = http://localhost:3000
+
+### 1. Welcome Message
+GET {{baseUrl}}/
+
+### 2. Health Check
+GET {{baseUrl}}/health
+
+### 3. Get All Contacts
+GET {{baseUrl}}/contacts
+
+### 4. Get Single Contact (Replace {id} with actual contact ID from response above)
+# First run "Get All Contacts" to get IDs, then copy one here
+GET {{baseUrl}}/contacts/{id}
+
+### 5. Example with actual ID (this won't work until you have real IDs)
+# GET {{baseUrl}}/contacts/507f1f77bcf86cd799439011
+
+### 6. Invalid ID (should return 400 error)
+GET {{baseUrl}}/contacts/invalid-id-123
+
+### 7. Non-existent ID (should return 404 error)
+GET {{baseUrl}}/contacts/507f1f77bcf86cd799439000

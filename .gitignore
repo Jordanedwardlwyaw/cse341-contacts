@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Runtime data
+.DS_Store
+*.pid
+
+# IDE files
+.vscode/
+.idea/
+
+# OS generated files
+Thumbs.db
