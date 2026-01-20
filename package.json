@@ -1,22 +1,25 @@
 {
   "name": "cse341-contacts",
-  "version": "1.0.0",
-  "description": "Contacts API for CSE 341",
+  "version": "2.0.0",
+  "description": "Contacts API for CSE 341 - Week 02 Project",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node create-seed.js"
   },
-  "keywords": ["contacts", "api", "cse341"],
+  "keywords": ["contacts", "api", "cse341", "byui"],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "mongoose": "^7.5.0",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "swagger-ui-express": "^5.0.1",
+    "swagger-jsdoc": "^6.2.8"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.1.11"
   }
 }
