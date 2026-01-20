@@ -18,4 +18,4 @@ npm-debug.log*
 .idea/
 
 # OS generated files
-Thumbs.db
+Thumbs.db.env
