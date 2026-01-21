@@ -9,7 +9,7 @@
     "seed": "node create-seed.js"
   },
   "keywords": ["contacts", "api", "cse341", "byui"],
-  "author": "Your Name",
+  "author": "paul luwango",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
