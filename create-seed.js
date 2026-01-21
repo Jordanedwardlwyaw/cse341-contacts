@@ -1,88 +1,94 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Contact = require('./src/models/Contact');
+const Project = require('./src/models/project');
+const Task = require('./src/models/task');
 
-const sampleContacts = [
-  {
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    favoriteColor: 'Blue',
-    birthday: new Date('1990-01-15')
-  },
-  {
-    firstName: 'Jane',
-    lastName: 'Smith',
-    email: 'jane.smith@example.com',
-    favoriteColor: 'Green',
-    birthday: new Date('1985-05-20')
-  },
-  {
-    firstName: 'Robert',
-    lastName: 'Johnson',
-    email: 'robert.johnson@example.com',
-    favoriteColor: 'Red',
-    birthday: new Date('1992-11-30')
-  },
-  {
-    firstName: 'Emily',
-    lastName: 'Davis',
-    email: 'emily.davis@example.com',
-    favoriteColor: 'Purple',
-    birthday: new Date('1988-07-10')
-  },
-  {
-    firstName: 'Michael',
-    lastName: 'Wilson',
-    email: 'michael.wilson@example.com',
-    favoriteColor: 'Orange',
-    birthday: new Date('1995-03-25')
-  }
-];
-
-async function seedDatabase() {
+const seedDatabase = async () => {
   try {
-    console.log('Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
+    await mongoose.connect(process.env.MONGODB_URI);
+    console.log('Connected to MongoDB for seeding...');
+
+    // Clear existing data
+    await Project.deleteMany({});
+    await Task.deleteMany({});
+    console.log('Cleared existing data');
+
+    // Create sample projects
+    const project1 = new Project({
+      name: 'Website Redesign',
+      description: 'Complete redesign of company website',
+      status: 'active',
+      deadline: '2024-12-31'
     });
-    console.log('✅ Connected to MongoDB');
-    
-    // Clear existing contacts
-    console.log('Clearing existing contacts...');
-    await Contact.deleteMany({});
-    console.log('✅ Database cleared');
-    
-    // Insert sample contacts
-    console.log('Inserting sample contacts...');
-    await Contact.insertMany(sampleContacts);
-    console.log(`✅ Inserted ${sampleContacts.length} contacts`);
-    
-    // Display inserted contacts
-    const contacts = await Contact.find({});
-    console.log('\n📋 Contacts in database:');
-    console.log('='.repeat(50));
-    contacts.forEach((contact, index) => {
-      console.log(`${index + 1}. ${contact.firstName} ${contact.lastName}`);
-      console.log(`   Email: ${contact.email}`);
-      console.log(`   Favorite Color: ${contact.favoriteColor}`);
-      console.log(`   Birthday: ${contact.birthday.toDateString()}`);
-      console.log(`   ID: ${contact._id}`);
-      console.log('-'.repeat(50));
+
+    const project2 = new Project({
+      name: 'Mobile App Development',
+      description: 'Build new mobile application',
+      status: 'planning'
     });
+
+    const projects = await Project.insertMany([project1, project2]);
+    console.log(`Created ${projects.length} projects`);
+
+    // Create sample tasks
+    const tasks = [
+      {
+        title: 'Create homepage layout',
+        description: 'Design and implement homepage layout',
+        projectId: projects[0]._id,
+        priority: 'high',
+        status: 'in-progress',
+        assignedTo: 'John Doe',
+        estimatedHours: 8,
+        dueDate: '2024-06-15',
+        tags: ['frontend', 'design', 'urgent']
+      },
+      {
+        title: 'Implement user authentication',
+        description: 'Add login and registration functionality',
+        projectId: projects[0]._id,
+        priority: 'critical',
+        status: 'todo',
+        estimatedHours: 16,
+        dueDate: '2024-06-30',
+        tags: ['backend', 'security']
+      },
+      {
+        title: 'Market research',
+        description: 'Research competitors and market trends',
+        projectId: projects[1]._id,
+        priority: 'medium',
+        status: 'completed',
+        assignedTo: 'Jane Smith',
+        estimatedHours: 20,
+        actualHours: 18,
+        tags: ['research', 'planning']
+      },
+      {
+        title: 'Design wireframes',
+        description: 'Create initial wireframes for mobile app',
+        projectId: projects[1]._id,
+        priority: 'high',
+        status: 'in-progress',
+        estimatedHours: 12,
+        dueDate: '2024-07-10',
+        tags: ['design', 'ui/ux']
+      }
+    ];
+
+    const createdTasks = await Task.insertMany(tasks);
+    console.log(`Created ${createdTasks.length} tasks`);
+
+    console.log('\n✅ Database seeded successfully!');
+    console.log('\nSample data created:');
+    console.log(`- Projects: ${projects.length}`);
+    console.log(`- Tasks: ${createdTasks.length}`);
     
-    console.log('\n🎉 Database seeding completed successfully!');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error seeding database:', error.message);
-    console.error('Full error:', error);
+    console.error('Error seeding database:', error);
     process.exit(1);
   }
-}
+};
 
-// Handle async errors
-seedDatabase().catch(error => {
-  console.error('Unhandled error:', error);
-  process.exit(1);
-});
+seedDatabase();
