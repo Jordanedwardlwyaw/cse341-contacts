@@ -1,0 +1,223 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const connectDB = require('./config/database');
+const passport = require('./config/auth');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
+
+// Import routes
+const bookRoutes = require('./routes/bookRoutes');
+const authorRoutes = require('./routes/authorRoutes');
+const authRoutes = require('./routes/authRoutes');
+
+// Import middleware
+const { isAuthenticated, optionalAuth, getCurrentUser } = require('./middleware/auth');
+
+// Connect to MongoDB
+connectDB();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// CORS configuration
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production' 
+        ? [process.env.RENDER_URL, 'http://localhost:3000']
+        : 'http://localhost:3000',
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+// Middleware
+app.use(cors(corsOptions));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Session configuration
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        ttl: 24 * 60 * 60 // 1 day
+    }),
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000, // 1 day
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax'
+    }
+}));
+
+// Passport initialization
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Add current user to all requests
+app.use(getCurrentUser);
+
+// Swagger configuration
+const swaggerOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: {
+            title: 'Bookstore API with OAuth',
+            version: '2.0.0',
+            description: 'A RESTful API for managing books and authors with Google OAuth authentication',
+            contact: {
+                name: 'Your Name',
+                email: 'your.email@example.com'
+            }
+        },
+        servers: [
+            {
+                url: process.env.BASE_URL || 'http://localhost:3000',
+                description: 'Development server'
+            }
+        ],
+        components: {
+            securitySchemes: {
+                OAuth2: {
+                    type: 'oauth2',
+                    flows: {
+                        authorizationCode: {
+                            authorizationUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/auth/google`,
+                            tokenUrl: '/auth/google/callback',
+                            scopes: {
+                                'profile': 'Access your profile information',
+                                'email': 'Access your email address'
+                            }
+                        }
+                    }
+                },
+                SessionCookie: {
+                    type: 'apiKey',
+                    in: 'cookie',
+                    name: 'connect.sid'
+                }
+            }
+        },
+        security: [
+            {
+                OAuth2: ['profile', 'email']
+            }
+        ]
+    },
+    apis: ['./routes/*.js']
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Routes
+app.get('/', (req, res) => {
+    res.json({
+        message: 'Welcome to Bookstore API with OAuth',
+        version: '2.0.0',
+        authenticated: req.isAuthenticated() ? true : false,
+        user: req.isAuthenticated() ? {
+            id: req.user.id,
+            name: req.user.displayName,
+            email: req.user.email
+        } : null,
+        endpoints: {
+            auth: {
+                google: '/auth/google',
+                logout: '/auth/logout',
+                current: '/auth/current',
+                register: 'POST /auth/register',
+                login: 'POST /auth/login'
+            },
+            books: {
+                public: '/api/books',
+                protected: '/api/protected/books'
+            },
+            authors: '/api/authors',
+            docs: '/api-docs',
+            health: '/health'
+        }
+    });
+});
+
+// API Routes
+app.use('/auth', authRoutes);
+app.use('/api/books', optionalAuth, bookRoutes); // Public but with optional auth
+app.use('/api/authors', optionalAuth, authorRoutes);
+app.use('/api/protected/books', isAuthenticated, bookRoutes); // Protected
+
+// Health check
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        database: req.db && req.db.serverConfig ? 'connected' : 'disconnected'
+    });
+});
+
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    swaggerOptions: {
+        persistAuthorization: true
+    }
+}));
+
+// Login page
+app.get('/login', (req, res) => {
+    res.json({
+        message: 'Please authenticate to access protected routes',
+        authenticationMethods: {
+            google: '/auth/google',
+            local: {
+                login: 'POST /auth/login',
+                register: 'POST /auth/register'
+            }
+        }
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        error: 'Route not found'
+    });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({
+            success: false,
+            error: err.message
+        });
+    }
+    
+    if (err.name === 'UnauthorizedError') {
+        return res.status(401).json({
+            success: false,
+            error: 'Authentication required'
+        });
+    }
+    
+    res.status(500).json({
+        success: false,
+        error: 'Internal Server Error',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🔗 API: ${process.env.BASE_URL || `http://localhost:${PORT}`}`);
+    console.log(`📚 Swagger Docs: ${process.env.BASE_URL || `http://localhost:${PORT}`}/api-docs`);
+    console.log(`🔐 Google OAuth: ${process.env.BASE_URL || `http://localhost:${PORT}`}/auth/google`);
+});
