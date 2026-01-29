@@ -140,25 +140,25 @@ async function runTests() {
   ];
   const hasMVC = mvcFiles.every(file => fs.existsSync(file));
   testResults.push({ test: 'MVC architecture used', passed: hasMVC });
-  console.log(`✅ MVC architecture: ${hasMVC}`);
+  console.log(` MVC architecture: ${hasMVC}`);
 
-  // Test 8: .env file exists
+  
   const hasEnv = fs.existsSync('.env');
   testResults.push({ test: '.env file exists (security)', passed: hasEnv });
-  console.log(`✅ .env file exists: ${hasEnv}`);
+  console.log(`.env file exists: ${hasEnv}`);
 
-  // Test 9: .gitignore excludes .env
+  
   let gitignoreCorrect = false;
   if (fs.existsSync('.gitignore')) {
     const gitignore = fs.readFileSync('.gitignore', 'utf8');
     gitignoreCorrect = gitignore.includes('.env') && gitignore.includes('node_modules');
   }
   testResults.push({ test: '.gitignore excludes .env and node_modules', passed: gitignoreCorrect });
-  console.log(`✅ .gitignore correct: ${gitignoreCorrect}`);
+  console.log(` .gitignore correct: ${gitignoreCorrect}`);
 
-  // Print summary
+
   console.log('\n' + '='.repeat(60));
-  console.log('📊 ASSIGNMENT VERIFICATION SUMMARY');
+  console.log(' ASSIGNMENT VERIFICATION SUMMARY');
   console.log('='.repeat(60));
   
   testResults.forEach((result, index) => {
@@ -170,23 +170,23 @@ async function runTests() {
   const percentage = Math.round((passed / total) * 100);
   
   console.log('\n' + '='.repeat(60));
-  console.log(`🎯 Score: ${passed}/${total} (${percentage}%)`);
+  console.log(` Score: ${passed}/${total} (${percentage}%)`);
   
   if (percentage >= 80) {
-    console.log('🚀 READY FOR SUBMISSION!');
-    console.log('\n✅ Week 1 Requirements Met:');
+    console.log('READY FOR SUBMISSION!');
+    console.log('\n Week 1 Requirements Met:');
     console.log('• GET all contacts endpoint ✓');
     console.log('• GET single contact by ID endpoint ✓');
     console.log('• MongoDB connection working ✓');
     console.log('• MVC architecture ✓');
     console.log('• Security (.env file) ✓');
-    console.log('\n📋 Next steps:');
+    console.log('\n Next steps:');
     console.log('1. Push to GitHub: git add . && git commit -m "Week 1 complete" && git push');
     console.log('2. Deploy to Render.com');
     console.log('3. Create 5-8 minute video demonstration');
     console.log('4. Submit GitHub, Render, and YouTube links in Canvas');
   } else {
-    console.log('⚠️  Needs more work before submission');
+    console.log('  Needs more work before submission');
   }
 }
 

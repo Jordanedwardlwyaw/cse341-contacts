@@ -4,7 +4,7 @@ const axios = require('axios');
 const API_BASE = 'http://localhost:3000';
 
 async function runAuthTests() {
-    console.log('🔐 Testing Authentication System\n');
+    console.log(' Testing Authentication System\n');
     
     try {
         // Test 1: Check server is running

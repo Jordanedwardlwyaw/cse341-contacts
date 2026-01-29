@@ -1,10 +1,6 @@
 const Contact = require('../models/contact');
 
-/**
- * @desc    Get all contacts
- * @route   GET /contacts
- * @access  Public
- */
+
 const getAllContacts = async (req, res) => {
   try {
     const contacts = await Contact.find();
@@ -33,11 +29,7 @@ const getAllContacts = async (req, res) => {
   }
 };
 
-/**
- * @desc    Get single contact by ID
- * @route   GET /contacts/:id
- * @access  Public
- */
+
 const getContactById = async (req, res) => {
   try {
     const contact = await Contact.findById(req.params.id);
@@ -79,11 +71,7 @@ const getContactById = async (req, res) => {
   }
 };
 
-/**
- * @desc    Create new contact
- * @route   POST /contacts
- * @access  Public
- */
+
 const createContact = async (req, res) => {
   try {
     const { firstName, lastName, email, favoriteColor, birthday } = req.body;
@@ -147,16 +135,12 @@ const createContact = async (req, res) => {
   }
 };
 
-/**
- * @desc    Update contact
- * @route   PUT /contacts/:id
- * @access  Public
- */
+
 const updateContact = async (req, res) => {
   try {
     const { firstName, lastName, email, favoriteColor, birthday } = req.body;
     
-    // Validate all required fields
+    
     if (!firstName || !lastName || !email || !favoriteColor || !birthday) {
       return res.status(400).json({
         success: false,
@@ -173,7 +157,7 @@ const updateContact = async (req, res) => {
       });
     }
     
-    // Check if email is being changed to another existing email
+    
     if (email !== contact.email) {
       const emailExists = await Contact.findOne({ email });
       if (emailExists) {
@@ -231,11 +215,7 @@ const updateContact = async (req, res) => {
   }
 };
 
-/**
- * @desc    Delete contact
- * @route   DELETE /contacts/:id
- * @access  Public
- */
+
 const deleteContact = async (req, res) => {
   try {
     const contact = await Contact.findById(req.params.id);
