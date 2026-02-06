@@ -1,92 +1,69 @@
-require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
+require('dotenv').config();
+const bodyParser = require('body-parser');
+const connectDB = require('./data/database'); // Matches your Mongoose file
 const passport = require('passport');
 const session = require('express-session');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const swaggerUi = require('swagger-ui-express');
-const swaggerDocument = require('./swagger.json');
+const GitHubStrategy = require('passport-github2').Strategy;
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
+
+// ========== MIDDLEWARE ==========
+app.use(bodyParser.json());
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'] }));
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'cse341-secret-key',
+  resave: false,
+  saveUninitialized: true, 
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 
+  }
+}));
+
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ========== PASSPORT CONFIGURATION ==========
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback"
-}, (accessToken, refreshToken, profile, done) => {
-    return done(null, profile);
+const getCallbackURL = () => {
+  if (process.env.GITHUB_CALLBACK_URL) return process.env.GITHUB_CALLBACK_URL;
+  if (process.env.NODE_ENV === 'production') return 'https://cse340-two.onrender.com/auth/github/callback';
+  return `http://localhost:${port}/auth/github/callback`;
+};
+
+passport.use(new GitHubStrategy({
+  clientID: process.env.GITHUB_CLIENT_ID,
+  clientSecret: process.env.GITHUB_CLIENT_SECRET,
+  callbackURL: getCallbackURL()
+},
+(accessToken, refreshToken, profile, done) => {
+  return done(null, profile);
 }));
 
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
-// ========== MIDDLEWARE ==========
-app.use(express.json());
-app.use(session({ 
-    secret: process.env.SESSION_SECRET || 'cse341-project-secret', 
-    resave: false, 
-    saveUninitialized: true 
-}));
-app.use(passport.initialize());
-app.use(passport.session());
-
 // ========== ROUTES ==========
-// Documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+app.use('/', require('./routes/index.js'));
 
-// Collection Routes
-app.use('/contacts', require('./routes/contactRoutes')); // Week 1-2 Logic
-app.use('/projects', require('./routes/projectRoutes')); // Week 3-4 Logic
-
-// Auth Logic
-app.get('/login', passport.authenticate('google', { scope: ['profile', 'email'] }));
-
-app.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-        res.redirect('/');
-    }
-);
-
-app.get('/logout', (req, res, next) => {
-    req.logout((err) => {
-        if (err) return next(err);
-        res.redirect('/');
-    });
-});
-
-app.get('/', (req, res) => {
-    res.send(`
-        <h1>CSE 341: Project 2 (Week 1-4)</h1>
-        <p>Logged in as: ${req.user ? req.user.displayName : 'Guest'}</p>
-        <ul>
-            <li><a href="/api-docs">API Documentation (Swagger)</a></li>
-            <li><a href="/contacts">View Contacts</a></li>
-            <li><a href="/projects">View Projects</a></li>
-            <li>${req.user ? '<a href="/logout">Logout</a>' : '<a href="/login">Login with Google</a>'}</li>
-        </ul>
-    `);
+// ========== ERROR HANDLING ==========
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(500).send(`
+    <h1>Internal Server Error</h1>
+    <p style="color:red;">${err.message}</p>
+    <a href="/">Go back to Home</a>
+  `);
 });
 
 // ========== START SERVER ==========
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => {
-        app.listen(PORT, () => {
-            console.log(`\n==========================================`);
-            console.log(`🚀  SERVER RUNNING ON PORT: ${PORT}`);
-            console.log(`==========================================`);
-            console.log(`✅  MongoDB Connected Successfully`);
-            console.log(`\n📂  TESTING LINKS:`);
-            console.log(`🏠  Home:      http://localhost:${PORT}/`);
-            console.log(`📖  Docs:      http://localhost:${PORT}/api-docs`);
-            console.log(`👥  Contacts:  http://localhost:${PORT}/contacts`);
-            console.log(`📂  Projects:  http://localhost:${PORT}/projects`);
-            console.log(`🔐  Login:     http://localhost:${PORT}/login`);
-            console.log(`==========================================\n`);
-        });
-    })
-    .catch(err => {
-        console.error('❌ MongoDB Connection Error:', err.message);
-    });
+// Changed to call your Mongoose connectDB function
+connectDB().then(() => {
+  app.listen(port, () => {
+    console.log(`✅ Server running on port ${port}`);
+    console.log(`🔐 Using GitHub Callback: ${getCallbackURL()}`);
+  });
+});

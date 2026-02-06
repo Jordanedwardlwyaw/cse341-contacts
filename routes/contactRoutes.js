@@ -1,14 +1,15 @@
 const router = require('express').Router();
-const contactController = require('../controllers/contactController');
-const { isAuthenticated } = require('../middleware/auth');
+const contactsController = require('../controllers/contacts');
+const { contactValidationRules, validate } = require('../middleware/validate');
+const { isAuthenticated } = require('../middleware/authenticate');
 
-// Week 1 Routes
-router.get('/', contactController.getAll);
-router.get('/:id', contactController.getSingle);
+// Public routes
+router.get('/', contactsController.getAll);
+router.get('/:id', contactsController.getSingle);
 
-// Week 2/4 Routes (Protected)
-router.post('/', isAuthenticated, contactController.createContact);
-router.put('/:id', isAuthenticated, contactController.updateContact);
-router.delete('/:id', isAuthenticated, contactController.deleteContact);
+// Protected and Validated routes
+router.post('/', isAuthenticated, contactValidationRules(), validate, contactsController.createContact);
+router.put('/:id', isAuthenticated, contactValidationRules(), validate, contactsController.updateContact);
+router.delete('/:id', isAuthenticated, contactsController.deleteContact);
 
 module.exports = router;
